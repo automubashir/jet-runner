@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Jet Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://threejs.org/build/three.js"></script>
+    <script>
+        var scene, camera, renderer, jet, obstacles, plane, sky;
+        var sceneSpeed = 0.1;
+        var jetRotationSpeed = 0.00057;
+        var jet_width = 0.4;
+        var jet_height = 0.1;
+        var jet_breadth = 0.1;
+        obstacle_width = 0.3;
+
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+            // var sky_texture = new THREE.TextureLoader().load('sky.jpg');
+            // scene.background = new THREE.Color(0x0000fffd)
+            camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.z = 5;
+
+            renderer = new THREE.WebGLRenderer();
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            //Create a DirectionalLight and turn on shadows for the light
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(1, 0, 0); //default; light shining from top
+            light.castShadow = true; // default false
+            scene.add(light);
+
+            //Set up shadow properties for the light
+            light.shadow.mapSize.width = 512; // default
+            light.shadow.mapSize.height = 512; // default
+            light.shadow.camera.near = 0.5; // default
+            light.shadow.camera.far = 500; // default
+
+            // Create a textured plane for the background
+            // var planeGeometry = new THREE.PlaneGeometry(30, 10)
+            // var floor_texture = new THREE.TextureLoader().load('floor.jpg');
+            // var planeMaterial = new THREE.MeshBasicMaterial({ map: floor_texture });
+            // plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            // plane.rotation.x = -1.5
+            // plane.rotation.z = jetRotationSpeed * (camera.rotation.beta || 0);
+            // // plane.rotation.x = -Math.PI / 2;
+            // scene.add(plane);
+
+            // // Create a sky for the background
+            // var skyGeo = new THREE.PlaneGeometry(60, 30)
+            // var sky_texture = new THREE.TextureLoader().load('sky.jpg');
+            // var skyMaterial = new THREE.MeshBasicMaterial({ map: sky_texture });
+            // sky = new THREE.Mesh(skyGeo, skyMaterial);
+            // sky.rotation.x = 1
+            // scene.add(sky);
+
+            // Create the jet
+            var geometry = new THREE.BoxGeometry(jet_width, jet_height, jet_breadth);
+            var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            jet = new THREE.Mesh(geometry, material);
+            scene.add(jet);
+
+            // Create an array to store obstacles
+            obstacles = [];
+
+
+
+            window.addEventListener('mousemove', handleOrientation);
+            // window.addEventListener('deviceorientation', handleOrientation);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Move the scene backward
+            // scene.position.z += sceneSpeed;
+
+            // make the jet stationary
+            jet.position.z = scene.position.z * (-1) + (camera.position.z - 1)
+            // plane.position.z += sceneSpeed
+
+            // Rotate the jet based on device tilt
+            // jet.rotation.x = -jetRotationSpeed * (camera.rotation.gamma || 0);
+            // jet.rotation.y = jetRotationSpeed * (camera.rotation.gamma || 0);
+            // jet.rotation.z = jetRotationSpeed * (camera.rotation.beta || 0);
+
+            // console.log(jet.position.x+jet_width, "---", jet.matrix.elements)
+
+            // Check for collisions with obstacles
+            for (var i = 0; i < obstacles.length; i++) {
+                if (obstacles[i].position.z + 0.2 >= jet.position.z &&
+                    obstacles[i].position.z + 0.2 <= jet.position.z + sceneSpeed) {
+
+                    if (obstacles[i].position.x + obstacle_width >= (jet.matrix.elements[4] / 2) &&
+                        obstacles[i].position.x <= jet.position.x + jet_width - (jet.matrix.elements[4] / 2)) {
+                        console.log("collision occured!", obstacles[i].position.x + obstacle_width, jet.matrix.elements)
+                        //   alert('Game Over');
+                        //   obstacles = []
+                        //   window.location.reload();
+                    }
+                }
+            }
+
+            // Create new obstacles
+            if (Math.random() < 0.02) {
+                var obstacleGeometry = new THREE.BoxGeometry(obstacle_width, 2, obstacle_width);
+                var pillar_texture = new THREE.TextureLoader().load('pillar.jpg')
+                var obstacleMaterial = new THREE.MeshBasicMaterial({ map: pillar_texture });
+                var obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
+                obstacle.castShadow = true;
+                obstacle.receiveShadow = true;
+                obstacle.position.x = (Math.random() - 0.5) * 4;
+                //   obstacle.position.y = (Math.random() - 0.5) * 4;
+                obstacle.position.y = 0;
+                obstacle.position.z = scene.position.z * -1 - 20;
+                scene.add(obstacle);
+                obstacles.push(obstacle);
+            }
+
+            for (var i = 0; i < obstacles.length; i++) {
+                //   move obstacles backwards
+                obstacles[i].position.z += sceneSpeed
+
+                // Remove obstacles that are out of view
+                if (obstacles[i].position.z > 5) {
+                    scene.remove(obstacles[i]);
+                    obstacles.splice(i, 1);
+                    i--;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function handleOrientation(event) {
+            // camera.rotation.gamma = event.gamma;
+            // camera.rotation.beta = event.beta;
+
+            // camera.rotation.alpha = event.pageX;
+            // camera.rotation.gamma = event.pageY;
+
+            let centered_x = (event.pageX - window.innerWidth / 2) * -1
+            jet.rotation.z = jetRotationSpeed * (centered_x || 0);
+
+            // sky.position.x = -centered_x/100000
+
+            // camera.rotation.beta = centered_x;
+            // camera.rotation.alpha = centered_x;
+            // camera.rotation.gamma = centered_x;
+            camera.rotation.y = centered_x / 1000000;
+            // console.log("mousex",centered_x)
+        }
+    </script>
+</body>
+
+</html>
